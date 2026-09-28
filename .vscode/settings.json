@@ -1,0 +1,14 @@
+{
+  "VsCodeTaskButtons.tasks": [
+    {
+      "label": "$(debug-all) GHCi",
+      "task": "Haskell: Load in GHCi",
+      "tooltip": "Load the current file in GHCi"
+    },
+    {
+      "label": "$(play) Run",
+      "task": "Haskell: Run (runghc)",
+      "tooltip": "Run the current file with runghc"
+    }
+  ]
+}
