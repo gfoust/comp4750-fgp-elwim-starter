@@ -32,6 +32,7 @@ The project layout is as follows:
     text string
 - **Iterator.hs** - type class defining interface for iterator types
 - **Main.hs** - application entry point
+- **MoreIO.hs** - contains an IO action for reading a single number
 - **Parser.hs** - front end to parser modules
 - **Scanner.hs** - front end to scanner modules
 - **Source.hs** - front end to source modules
@@ -96,28 +97,28 @@ values.
 You will need to be able to evaluate values of your expression type, and execute objects of your
 statement type.
 
-An Elwim program can only input numbers and can only output numbers.  Therefore, we can view both
-input and output simply as a list of numbers.
+Evaluating expressions is simple and stateless: expressions never perform I/O, and never modify
+program state.  They may, however, need to look up the value of variables.  We use the term
+*context* to refer to a data structure that allows you to store and retrieve variable values.  A
+good data structure for a context is a map from strings to doubles.
 
-Additionally, an Elwim program has a state in the form of program variables.  You should use a
-`Data.Map.Map String Double` to store the value of variables.  Because Elwim statements may modify
-variable values, your execution function will need to return a map representing the new values of
-variables after the statement executes.
+For example, a signature for your evaluate function might look like this:
 
-All together, that gives an execution function that takes (1) an AST statement, (2) a map of
-variable values, and (3) a list of input numbers, and that returns (1) a list of output numbers
-resulting from print statements, (2) an updated map of variable values, and (3) an updated list of
-input numbers.  You may recognize this as following the state pattern, where the state is the
-map of variable values and the list of input numbers.  You may want to define an aggregate type so
-that you can treat these two things as a single state value.
+```hs
+type Context = Data.Map.Map String
 
-Using the `State` monad is highly recommended because it will simplify your code.  (You may
-also write your own monad if you feel up to the task.)
+evaluate :: Context -> Expression -> Double
+```
 
-Evaluating expressions is simpler: it will never consume input, never produce output, and never
-modify program state.  It may, however, need to look up the value of variables; therefore you will
-need to give it your variable map.  (I actually suggest you start with evaluation, since it is
-simpler and you will use it during statement execution.)
+Statements are more complicated.  For one thing, they can perform I/O; therefore the execution
+function will need to be an I/O action.  Also, they can make modifications to program state; i.e.,
+change the values of variables.  Thus, they will need to not only take a context as a parameter,
+but also return an updated context reflecting the resulting values of variables.
+
+All together, that gives an IO action that takes (1) an AST statement, (2) a map of variable values,
+and that returns an updated map of variable values.  You may recognize this as following the state
+pattern, where the state is the map of variable values.
+
 
 ### Step 4: Modify the application to be an interpreter
 
