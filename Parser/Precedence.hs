@@ -2,8 +2,7 @@ module Parser.Precedence where
 
 import Scanner.Token
 
-import qualified Data.Map.Strict as Map
-import Data.Map.Strict (Map, (!))
+import Data.Map.Strict as Map (Map, (!), fromList)
 
 isUnary :: Operator -> Bool
 isUnary Not = True

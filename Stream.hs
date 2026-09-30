@@ -43,7 +43,7 @@ getNext = Processor impl
   where
     impl itr = case Iterator.curValue itr of
       Just value -> Processed value (Iterator.next itr)
-      Nothing    -> ProcessFailed "unexpected end of file" itr
+      Nothing    -> OptionFailed itr
 
 
 getPos :: Source.Positioned itrT => Processor itrT Source.Position
@@ -60,6 +60,22 @@ getEof = Processor impl
 
 optionFail :: Processor itrT a
 optionFail = Processor OptionFailed
+
+
+satisfy :: Iterator.Iterator itrT => (Iterator.Value itrT -> Bool) -> Processor itrT (Iterator.Value itrT)
+satisfy pred = Processor impl
+  where
+    impl itr = case Iterator.curValue itr of
+      Just value | pred value -> Processed value (Iterator.next itr)
+      _                       -> OptionFailed itr
+
+
+require :: Processor itrT valT -> String -> Processor itrT valT
+require procA msg = Processor impl
+  where
+    impl itr = case process procA itr of
+      OptionFailed itr -> ProcessFailed msg itr
+      result           -> result
 
 
 instance Functor (Processor itrT) where

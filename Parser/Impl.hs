@@ -3,7 +3,7 @@ module Parser.Impl (parse) where
 import Control.Applicative (many, some, optional, (<|>))
 
 import Parser.Precedence
-import Parser.Ast as Ast (Ast(..))
+import Parser.Ast as Ast
 
 import qualified Stream
 import qualified Source
@@ -30,54 +30,41 @@ isUnaryOperator _ = False
 type Parser = Stream.Processor Scanner.TokenItr
 
 
-require :: Parser a -> String -> Parser a
-require parser msg = parser <|> fail msg
-
-
-parseTokenIf :: (Token -> Bool) -> Parser Token
-parseTokenIf predicate = do
-  Stream.peekNext
-  token <- Stream.getNext
-  if predicate token
-    then return token
-    else Stream.optionFail
-
-
 parseToken :: Token -> Parser Token
-parseToken = parseTokenIf . (==)
+parseToken = Stream.satisfy . (==)
 
 
 requireToken :: Token -> Parser Token
-requireToken token = require (parseTokenIf (== token)) ("expected: " ++ show token)
+requireToken token = Stream.require (parseToken token) ("expected: " ++ show token)
 
 
 requirePrimary :: Parser Ast
-requirePrimary = require parsePrimary "expected expression"
+requirePrimary = Stream.require parsePrimary "expected expression"
 
 
 requireExpression :: Parser Ast
-requireExpression = require parseExpr "expected expression"
+requireExpression = Stream.require parseExpr "expected expression"
 
 
 requireStatement :: Parser Ast
-requireStatement = require parseStatement "expected statement"
+requireStatement = Stream.require parseStatement "expected statement"
 
 
 parseVariable :: Parser Ast
 parseVariable = do
-  token <- parseTokenIf isIdentifier
+  token <- Stream.satisfy isIdentifier
   return $ Ast.Leaf token
 
 
 parseNumber :: Parser Ast
 parseNumber = do
-  token <- parseTokenIf isNumber
+  token <- Stream.satisfy isNumber
   return $ Ast.Leaf token
 
 
 parseUnary :: Parser Ast
 parseUnary = do
-  opToken <- parseTokenIf isUnaryOperator
+  opToken <- Stream.satisfy isUnaryOperator
   expr <- requirePrimary
   return $ Ast.Node opToken [expr]
 
@@ -99,15 +86,15 @@ parseExpr = do
   expr <- parsePrimary
   moreOperators expr 0
   where
-    moreOperators lhs minPrec = do
+    moreOperators lhs minPrecedence = do
       next <- optional Stream.peekNext -- don't consume yet
       case next of
         Just (Operator op)
-          | isBinary op && precedenceOf op >= minPrec -> do
+          | isBinary op && precedenceOf op >= minPrecedence -> do
               Stream.getNext -- now we can consume
               rhs <- requirePrimary
               rhsExpanded <- moreOperators rhs (precedenceOf op + 1)
-              moreOperators (Ast.Node (Operator op) [lhs, rhsExpanded]) minPrec
+              moreOperators (Ast.Node (Operator op) [lhs, rhsExpanded]) minPrecedence
         _ -> return lhs
 
 
@@ -122,14 +109,14 @@ parsePrint = do
 parseScan :: Parser Ast
 parseScan = do
   parseToken Scan
-  var <- require (parseTokenIf isIdentifier) "expected variable"
+  var <- Stream.require (Stream.satisfy isIdentifier) "expected variable"
   requireToken Semicolon
   return $ Ast.Node Scan [Ast.Leaf var]
 
 
 parseAssignment :: Parser Ast
 parseAssignment = do
-  var <- parseTokenIf isIdentifier
+  var <- Stream.satisfy isIdentifier
   requireToken Assign
   value <- requireExpression
   requireToken Semicolon
@@ -151,12 +138,12 @@ parseIf = do
   expr <- requireExpression
   requireToken RightParen
   thenStmt <- requireStatement
-  maybeElse <- optional parseIfElse
+  maybeElse <- optional parseElse
   case maybeElse of
     Just elseStmt -> return $ Ast.Node Else [expr, thenStmt, elseStmt]
     Nothing       -> return $ Ast.Node If [expr, thenStmt]
   where
-    parseIfElse = do
+    parseElse = do
       parseToken Else
       requireStatement
 

@@ -33,7 +33,6 @@ instance Iterator.Iterator TokenItr where
 
   isEnd :: TokenItr -> Bool
   isEnd (TokenItr []) = True
-  isEnd (TokenItr (PosToken _ Eof : _)) = True
   isEnd _ = False
 
   curValue :: TokenItr -> Maybe Token

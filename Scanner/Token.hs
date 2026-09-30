@@ -36,7 +36,6 @@ data Token
   | Else
   | While
   | Do
-  | Eof
   deriving (Eq)
 
 
@@ -57,7 +56,6 @@ instance Show Token where
   show Else = "Else"
   show While = "While"
   show Do = "Do"
-  show Eof = "Eof"
 
 
 data PosToken = PosToken Source.Position Token

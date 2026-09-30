@@ -1,4 +1,3 @@
-{- HLINT ignore "Use unless" -}
 module Scanner.Impl (scan) where
 
 import qualified Data.Char as Char
@@ -17,28 +16,14 @@ import Scanner.Token
 type Scanner = Stream.Processor Source.SourceItr
 
 
-softGet :: Scanner Char
-softGet = do
-  Stream.peekNext
-  Stream.getNext
-
-
-satisfy :: (Char -> Bool) -> Scanner Char
-satisfy predicate = do
-  c <- softGet
-  if predicate c
-    then return c
-    else Stream.optionFail
-
-
 scanWhitespace :: Scanner String
-scanWhitespace = many (satisfy Char.isSpace)
+scanWhitespace = many (Stream.satisfy Char.isSpace)
 
 
 scanIdentifier :: Scanner Token
 scanIdentifier = do
-  first <- satisfy isIdStart
-  rest <- many (satisfy isIdContinue)
+  first <- Stream.satisfy isIdStart
+  rest <- many (Stream.satisfy isIdContinue)
   let id = first : rest
   return $ fromMaybe (Identifier id) (Lexemes.keywords !? id)
   where
@@ -48,28 +33,28 @@ scanIdentifier = do
 
 scanNumber :: Scanner Token
 scanNumber = do
-  intStr <- some (satisfy Char.isDigit)
+  intStr <- some (Stream.satisfy Char.isDigit)
   maybeFloatStr <- optional fraction
   case maybeFloatStr of
     Just floatStr -> return (Number $ read $ intStr ++ floatStr)
     Nothing       -> return (Number $ read intStr)
   where
     fraction = do
-      satisfy (== '.')
-      digits <- some (satisfy Char.isDigit)
+      Stream.satisfy (== '.')
+      digits <- some (Stream.satisfy Char.isDigit)
       return ('.' : digits)
 
 
 scanPunctuation2 :: Scanner Token
 scanPunctuation2 = do
-  c <- softGet
-  d <- softGet
+  c <- Stream.getNext
+  d <- Stream.getNext
   maybe Stream.optionFail return (Lexemes.punctuation !? [c, d])
 
 
 scanPunctuation1 :: Scanner Token
 scanPunctuation1 = do
-  c <- softGet
+  c <- Stream.getNext
   maybe Stream.optionFail return (Lexemes.punctuation !? [c])
 
 
@@ -88,7 +73,7 @@ allTokens = do
   pos <- Stream.getPos
   eof <- Stream.getEof
   if eof
-    then return $ tokens ++ [PosToken pos Eof]
+    then return tokens
     else fail "unrecognized character"
 
 

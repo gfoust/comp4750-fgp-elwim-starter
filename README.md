@@ -100,37 +100,53 @@ statement type.
 Evaluating expressions is simple and stateless: expressions never perform I/O, and never modify
 program state.  They may, however, need to look up the value of variables.  We use the term
 *context* to refer to a data structure that allows you to store and retrieve variable values.  A
-good data structure for a context is a map from strings to doubles.
-
-For example, a signature for your evaluate function might look like this:
+good data structure for a context is a map from strings to doubles.  You may find it helpful to
+define a type alias, like so:
 
 ```hs
-type Context = Data.Map.Map String
+type Context = Data.Map.Map String Double
+```
 
-evaluate :: Context -> Expression -> Double
+Then a signature for your evaluate function might look like this:
+
+```hs
+evaluate :: Expression -> Context -> Double
 ```
 
 Statements are more complicated.  For one thing, they can perform I/O; therefore the execution
-function will need to be an I/O action.  Also, they can make modifications to program state; i.e.,
-change the values of variables.  Thus, they will need to not only take a context as a parameter,
-but also return an updated context reflecting the resulting values of variables.
+function will need to be an I/O action.  The file [MoreIO.hs](MoreIO.hs) has a function named
+`getNumber` that can be used to extract the next number from the standard input stream; it will be
+helpful in executing the scan statement.
+
+Also, statements can make modifications to program state; i.e., change the values of variables.
+Thus, they will need to not only take a context as a parameter, but also return an updated context
+reflecting the resulting values of variables.
 
 All together, that gives an IO action that takes (1) an AST statement, (2) a map of variable values,
-and that returns an updated map of variable values.  You may recognize this as following the state
-pattern, where the state is the map of variable values.
+and that returns an updated map of variable values.  This suggests something like this:
 
+```hs
+execute :: Statement -> Context -> IO Context
+```
+
+You may recognize this as following the state pattern, where the state is the map of variable
+values. You may find that it simplifies things to use the state monad to manage your context.  This
+is not required, however.
+
+```hs
+execute :: Statement -> StateT Context IO ()
+```
 
 ### Step 4: Modify the application to be an interpreter
 
 Modify main so that your application will now execute Elwim programs instead of simply printing out
-their ASTs.  To do this you should first parse the AST, then pass it off to your execution function.
+their ASTs.  Also, it should now read the Elwim program from a file instead of from the standard
+input stream.
 
-Use the standard input stream as input for Elwim program input: turn the entire input stream into a
-list of doubles that you can pass to your execute function.
-
-Use `getArgs :: IO [String]` to get the list of program arguments.  Treat these as the names of
-files that have Elwim programs.  For each file name, read the contents of that file, parse it
+You can use `getArgs :: IO [String]` to get the list of program arguments.  Treat these as the names
+of files that have Elwim programs.  For each file name, read the contents of that file, parse it
 into an AST, then execute it.
 
-The value of variables should persist between files.
+The value of variables should persist between files.  In other words, the state that results from
+executing the first program should become the state of the second program.
 
