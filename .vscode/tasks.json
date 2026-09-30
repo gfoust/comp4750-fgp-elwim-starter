@@ -16,7 +16,19 @@
       "label": "Haskell: Run (runghc)",
       "type": "shell",
       "command": "runghc",
-      "args": ["${file}"],
+      "args": ["Main.hs"],
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Haskell: Build (ghc)",
+      "type": "shell",
+      "command": "ghc",
+      "args": ["-outputdir", "build", "-o", "build/elwim", "Main.hs"],
       "group": {
         "kind": "build",
         "isDefault": true
