@@ -28,7 +28,7 @@
       "label": "Haskell: Build (ghc)",
       "type": "shell",
       "command": "ghc",
-      "args": ["-outputdir", "build", "-o", "build/elwim", "Main.hs"],
+      "args": ["-outputdir", "build", "-o", "elwim", "Main.hs"],
       "group": {
         "kind": "build",
         "isDefault": true
