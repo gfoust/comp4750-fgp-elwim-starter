@@ -1,4 +1,4 @@
-module MoreIO (getNumber) where
+module MoreIO (getNumber, promptNumber) where
 
 import System.IO ( hLookAhead, hFlush, isEOF, stdin, stdout )
 import System.IO.Error ( catchIOError )
