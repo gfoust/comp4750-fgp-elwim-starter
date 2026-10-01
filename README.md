@@ -95,7 +95,8 @@ values.
 ### Step 3: Create execute/evaluate functions for your AST types
 
 You will need to be able to evaluate values of your expression type, and execute objects of your
-statement type.
+statement type.  I recommend that you not put this code in the `Parser` folder; instead, make a new
+module for these functions.
 
 Evaluating expressions is simple and stateless: expressions never perform I/O, and never modify
 program state.  They may, however, need to look up the value of variables.  We use the term
