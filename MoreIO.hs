@@ -1,6 +1,6 @@
 module MoreIO (getNumber) where
 
-import System.IO ( hLookAhead, isEOF, stdin )
+import System.IO ( hLookAhead, hFlush, isEOF, stdin, stdout )
 import System.IO.Error ( catchIOError )
 import Data.Char ( isSpace )
 import Control.Monad ( when )
@@ -39,3 +39,10 @@ getNumber :: IO Double
 getNumber =
   (read <$> getToken)
   `catchIOError` \_ -> return 0
+
+
+promptNumber :: String -> IO Double
+promptNumber name = do
+  putStr (name ++ "? ")
+  hFlush stdout
+  getNumber
