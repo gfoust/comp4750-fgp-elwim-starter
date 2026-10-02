@@ -40,9 +40,9 @@ The project layout is as follows:
 
 
 You will need to make a few changes to the existing program.  In particular, the existing AST type
-(defined in [Parser/Ast.hs](Parser/Ast.hs)) is oversimplified. It contains only two forms: one for a leaf
-node (no children) and one for an internal node (list of children).  This simplistic tree type would
-be very difficult to work with: there is nothing distinguishing the different kinds of nodes.
+(defined in [Parser/Ast.hs](Parser/Ast.hs)) is oversimplified. It contains only two forms: one for a
+leaf node (no children) and one for an internal node (list of children).  This simplistic tree type
+would be very difficult to work with: there is nothing distinguishing the different kinds of nodes.
 
 ## Project Requirements
 
@@ -105,7 +105,7 @@ good data structure for a context is a map from strings to doubles.  You may fin
 define a type alias, like so:
 
 ```hs
-type Context = Data.Map.Map String Double
+type Context = Map String Double
 ```
 
 Then a signature for your evaluate function might look like this:
@@ -116,8 +116,9 @@ evaluate :: Expression -> Context -> Double
 
 Statements are more complicated.  For one thing, they can perform I/O; therefore the execution
 function will need to be an I/O action.  The file [MoreIO.hs](MoreIO.hs) has a function named
-`getNumber` that can be used to extract the next number from the standard input stream; it will be
-helpful in executing the scan statement.
+`promptNumber` that can be used to extract the next number from the standard input stream: it's
+parameter is the variable name (used for a prompt) and it returns the next number.  Use this to
+execute the scan statement.
 
 Also, statements can make modifications to program state; i.e., change the values of variables.
 Thus, they will need to not only take a context as a parameter, but also return an updated context
@@ -130,12 +131,48 @@ and that returns an updated map of variable values.  This suggests something lik
 execute :: Statement -> Context -> IO Context
 ```
 
-You may recognize this as following the state pattern, where the state is the map of variable
-values. You may find that it simplifies things to use the state monad to manage your context.  This
-is not required, however.
+#### Optional: state monad
+
+You may recognize this function signature as the state pattern, where the state is the map of
+variable values. Using a state monad to manage your context can simplify your code.  However, it
+might (arguably) make your code harder to understand due to to the raised level of abstraction.  If
+you want to pursue this (optional) route, here are some tips:
+
+You should use the `StateT` monad transformer to combine the state and I/O monads.  This will give
+you a function something like this:
 
 ```hs
 execute :: Statement -> StateT Context IO ()
+```
+
+Note that there is a difference between this stateful-IO monad and the plain-IO monad.  You can use
+`liftM` to lift plain-IO actions into your stateful-IO monad.  For example:
+```hs
+  num <- liftM (promptNumber name)
+```
+
+While you *can* use the state's `get` accessor function to retrieve the context map, you might
+prefer the `gets` function which takes a function from state to value, passes it the state, and
+returns the value.  So, for example, if your evaluate function takes a context as the last argument,
+you can write something like this:
+
+```hs
+  result <- gets (evaluate expr)
+```
+
+Additionally, the state's `modify` function takes a function from state to state, passes it the
+current state, and then replaces the state with whatever the function returns.  Since the last
+argument to `Data.Map.insert` is the map, you can update the map like this:
+
+```hs
+  modify (insert name value)
+```
+
+To run your stateful-IO monad as a plain-IO action, use the `runStateT` function and pass it the
+initial context
+
+```hs
+  ((), updatedContext) <- runStateT (execute stmt) initialContext
 ```
 
 ### Step 4: Modify the application to be an interpreter
@@ -144,10 +181,11 @@ Modify main so that your application will now execute Elwim programs instead of 
 their ASTs.  Also, it should now read the Elwim program from a file instead of from the standard
 input stream.
 
-You can use `getArgs :: IO [String]` to get the list of program arguments.  Treat these as the names
-of files that have Elwim programs.  For each file name, read the contents of that file, parse it
-into an AST, then execute it.
+Use `getArgs :: IO [String]` to get the list of program arguments.  Treat these as the names of
+files that have Elwim programs.  For each file name, read the contents of that file, parse it into
+an AST, then execute it.  If a file fails to parse, print the error message and halt (don't execute
+any more files).
 
 The value of variables should persist between files.  In other words, the state that results from
-executing the first program should become the state of the second program.
+executing the first program should become the state of the second program, and so on.
 
