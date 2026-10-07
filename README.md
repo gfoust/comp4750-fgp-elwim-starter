@@ -189,3 +189,10 @@ any more files).
 The value of variables should persist between files.  In other words, the state that results from
 executing the first program should become the state of the second program, and so on.
 
+#### Implementation hints:
+- Use `promptNumber` in [`MoreIO.hs`](MoreIO.hs) to implement the "scan" statement.
+- Use this function to implement the `%` operator:
+  ```hs
+  fmod :: Double -> Double -> Double
+  fmod x y = x - y * fromIntegral (truncate (x / y))
+  ```
