@@ -169,10 +169,12 @@ argument to `Data.Map.insert` is the map, you can update the map like this:
 ```
 
 To run your stateful-IO monad as a plain-IO action, use the `runStateT` function and pass it the
-initial context
+initial context.  (You can alternatively use `execStateT`, which only returns only the final state.)
 
 ```hs
   ((), updatedContext) <- runStateT (execute stmt) initialContext
+  -- OR --
+  updatedContext <- execStateT (execute stmt) initialContext
 ```
 
 ### Step 4: Modify the application to be an interpreter
