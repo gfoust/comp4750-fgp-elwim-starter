@@ -146,9 +146,9 @@ execute :: Statement -> StateT Context IO ()
 ```
 
 Note that there is a difference between this stateful-IO monad and the plain-IO monad.  You can use
-`liftM` to lift plain-IO actions into your stateful-IO monad.  For example:
+`lift` to lift plain-IO actions into your stateful-IO monad.  For example:
 ```hs
-  num <- liftM (promptNumber name)
+  num <- lift (promptNumber name)
 ```
 
 While you *can* use the state's `get` accessor function to retrieve the context map, you might

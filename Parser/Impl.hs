@@ -90,10 +90,10 @@ parseExpr = do
       next <- optional Stream.peekNext -- don't consume yet
       case next of
         Just (Operator op)
-          | isBinary op && precedenceOf op >= minPrecedence -> do
+          | isBinary op && precedenceOf op > minPrecedence -> do
               Stream.getNext -- now we can consume
               rhs <- requirePrimary
-              rhsExpanded <- moreOperators rhs (precedenceOf op + 1)
+              rhsExpanded <- moreOperators rhs (precedenceOf op)
               moreOperators (Ast.Node (Operator op) [lhs, rhsExpanded]) minPrecedence
         _ -> return lhs
 

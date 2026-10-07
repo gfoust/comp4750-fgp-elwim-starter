@@ -15,14 +15,17 @@ data ProcessResult itrT va
 
 
 --------------------------------------------------------------------------------
-
+-- The actual type and its accessors
 
 newtype Processor itrT valT = Processor (itrT -> ProcessResult itrT valT)
 
+
+-- Getter for the function inside the processor
 process :: Processor itrT valT -> itrT -> ProcessResult itrT valT
 process (Processor f) = f
 
 
+-- Run a parser and interpret the ProcessResult as success or failure
 processResult :: Source.Positioned itrT => Processor itrT valT -> itrT -> Either (Source.Position, String) valT
 processResult (Processor f) itr = case f itr of
   Processed value _         -> Right value
@@ -30,6 +33,7 @@ processResult (Processor f) itr = case f itr of
   ProcessFailed msg itr_msg -> Left (Source.posOf itr_msg, msg)
 
 
+-- Return next value in the stream without removing it
 peekNext :: Iterator.Iterator itrT => Processor itrT (Iterator.Value itrT)
 peekNext = Processor impl
   where
@@ -38,6 +42,7 @@ peekNext = Processor impl
       Nothing    -> OptionFailed itr
 
 
+-- Remove and return next value in the stream
 getNext :: Iterator.Iterator itrT => Processor itrT (Iterator.Value itrT)
 getNext = Processor impl
   where
@@ -46,22 +51,26 @@ getNext = Processor impl
       Nothing    -> OptionFailed itr
 
 
+-- Return current position in the stream
 getPos :: Source.Positioned itrT => Processor itrT Source.Position
 getPos = Processor impl
   where
     impl itr = Processed (Source.posOf itr) itr
 
 
+-- Test for end of stream
 getEof :: Iterator.Iterator itrT => Processor itrT Bool
 getEof = Processor impl
   where
     impl itr = Processed (Iterator.isEnd itr) itr
 
 
+-- Trigger a soft failure
 optionFail :: Processor itrT a
 optionFail = Processor OptionFailed
 
 
+-- Remove and return next value *if* it satisfies predicate
 satisfy :: Iterator.Iterator itrT => (Iterator.Value itrT -> Bool) -> Processor itrT (Iterator.Value itrT)
 satisfy pred = Processor impl
   where
@@ -70,6 +79,7 @@ satisfy pred = Processor impl
       _                       -> OptionFailed itr
 
 
+-- Run processor and trigger hard failure if it does not succeed
 require :: Processor itrT valT -> String -> Processor itrT valT
 require procA msg = Processor impl
   where
@@ -78,7 +88,11 @@ require procA msg = Processor impl
       result           -> result
 
 
+--------------------------------------------------------------------------------
+-- Type class definitions
+
 instance Functor (Processor itrT) where
+  fmap :: (a -> b) -> Processor itrT a -> Processor itrT b
   fmap = liftM
 
 
